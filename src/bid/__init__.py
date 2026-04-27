@@ -26,6 +26,7 @@ from bid.shells import (
     fit_multinomial,
     nll_conditional,
     nll_multinomial,
+    select_radii,
     shell_counts,
 )
 
@@ -55,5 +56,6 @@ __all__ = [
     "nll_conditional",
     "fit_multinomial",
     "fit_conditional",
+    "select_radii",
 ]
 __version__ = "0.1.0"

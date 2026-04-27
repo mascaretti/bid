@@ -130,6 +130,38 @@ def nll_conditional(
     )
 
 
+def select_radii(
+    shell_data: ShellData,
+    q1: float = 0.25,
+    q2: float = 0.75,
+) -> tuple[int, int]:
+    """Pick conditional-fit radii :math:`(k_1, k_2)` at empirical quantiles
+    of the pooled shell distribution.
+
+    Useful when the shell distribution is concentrated and a fixed pair like
+    ``(40, 60)`` misses the bulk of the support — common on the ordered side
+    of a phase transition. The returned radii satisfy
+    ``1 <= k1 < k2 <= L``; degenerate cases (e.g. all mass at ``r=0``) are
+    nudged apart so the conditional fit has at least one shell of width.
+
+    Args:
+        shell_data: output of :func:`shell_counts`.
+        q1, q2: cumulative-probability cutoffs in ``(0, 1)``, ``q1 < q2``.
+    """
+    if not 0.0 < q1 < q2 < 1.0:
+        raise ValueError(f"need 0 < q1 < q2 < 1, got q1={q1}, q2={q2}")
+
+    L = shell_data.L
+    cumulative = jnp.asarray(shell_data.n_cum.sum(axis=0), dtype=jnp.float64)
+    cdf = cumulative / cumulative[-1]
+
+    k1 = int(jnp.searchsorted(cdf, q1))
+    k2 = int(jnp.searchsorted(cdf, q2))
+    k1 = max(1, min(k1, L - 1))
+    k2 = max(k1 + 1, min(k2, L))
+    return k1, k2
+
+
 def _bfgs_fit(loss_scalar, d0_init: float, d1_init: float) -> ShellFitResult:
     x0 = jnp.array([float(d0_init), float(d1_init)], dtype=jnp.float64)
     res = minimize(lambda x: loss_scalar(x[0], x[1]), x0, method="BFGS")

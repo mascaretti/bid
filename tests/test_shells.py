@@ -11,6 +11,7 @@ from bid import (
     estimate_bid,
     estimate_bid_shells,
     pairwise_hamming,
+    select_radii,
     shell_counts,
 )
 
@@ -68,6 +69,32 @@ def test_multinomial_agrees_with_bid_kl_fit():
     # Stochastic optimiser converges noisily; loosen the tolerance accordingly.
     assert float(shell.d0) == pytest.approx(float(bid.d0), abs=0.5)
     assert float(shell.d1) == pytest.approx(float(bid.d1), abs=0.05)
+
+
+def test_select_radii_brackets_bulk_on_random_spins():
+    """For uniform ±1 data the pairwise-distance distribution peaks near L/2,
+    so quantile-based radii should bracket that bulk."""
+    L = 100
+    X = _random_spins(N=300, L=L, seed=4)
+    sd = shell_counts(pairwise_hamming(X), L=L)
+    k1, k2 = select_radii(sd, q1=0.25, q2=0.75)
+    assert 1 <= k1 < k2 <= L
+    # Random spins concentrate around L/2 = 50; q=0.25..0.75 should land in
+    # roughly 40..60 (loose: within 10 bits of the median).
+    assert abs(k1 - 40) <= 10
+    assert abs(k2 - 60) <= 10
+
+
+def test_select_radii_validates_quantiles():
+    L = 20
+    X = _random_spins(N=50, L=L, seed=5)
+    sd = shell_counts(pairwise_hamming(X), L=L)
+    with pytest.raises(ValueError):
+        select_radii(sd, q1=0.0, q2=0.5)
+    with pytest.raises(ValueError):
+        select_radii(sd, q1=0.7, q2=0.3)
+    with pytest.raises(ValueError):
+        select_radii(sd, q1=0.5, q2=1.0)
 
 
 def test_conditional_rejects_invalid_radii():
