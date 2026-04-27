@@ -53,6 +53,36 @@ print(f"log KL = {result.log_kl:.3f}")
 For random ±1 streams of length `L`, the estimator should recover
 `d0 ≈ L` and `d1 ≈ 0`.
 
+## Shell-based fits (alternative likelihoods)
+
+The same generalised-binomial model can be fit to **per-reference shell
+counts** instead of the pooled distance histogram. This is *the same model* —
+only the observational summary and likelihood change. Two variants:
+
+| Function | Likelihood | What it's good for |
+|---|---|---|
+| `estimate_bid_shells(X)` | per-reference multinomial | statistically honest fit (no double-counting of correlated pairs); same MLE as the histogram fit in expectation, more accurate uncertainty. |
+| `estimate_bid_shells(X, k1, k2)` | I3D-style conditional binomial at radii (k1, k2) | targets the small-r regime where d0 lives; robust to misspecification of the linear `d(r) = d0 + d1·r`. |
+
+```python
+from bid import estimate_bid_shells
+
+# multinomial fit (uses every shell)
+res = estimate_bid_shells(X, L=100)
+
+# conditional fit anchored at integer radii k1 < k2
+res = estimate_bid_shells(X, k1=40, k2=60, L=100)
+
+print(res.d0, res.d1, res.nll, bool(res.converged))
+```
+
+Both fits are minimised by JAX BFGS (`jax.scipy.optimize.minimize`), no
+stochastic loop — they're seconds-fast for typical inputs.
+
+The shells API is a **diagnostic** as much as an estimator: fitting BID with
+KL on the histogram and again with conditional shells at small radii and
+comparing `d0` is a cheap test for misspecification of `d(r) = d0 + d1·r`.
+
 ## Lower-level API
 
 If you need to plug into a custom loop, the building blocks are exposed:
@@ -62,16 +92,24 @@ from bid import (
     pairwise_hamming,
     empirical_histogram,
     truncate_by_quantiles,
-    log_p_model,
+    p_model,
     kl_divergence,
     init_state,
     minimize_kl,
     initial_guess,
+    # shells
+    shell_counts,
+    cumulative_volume,
+    nll_multinomial,
+    nll_conditional,
+    fit_multinomial,
+    fit_conditional,
 )
 ```
 
 All functions are pure, JIT-compatible, and operate on JAX-friendly pytrees
-(`NamedTuple`s for `Histogram`, `OptState`, `BIDResult`).
+(`NamedTuple`s: `Histogram`, `OptState`, `BIDResult`, `ShellData`,
+`ShellFitResult`).
 
 ## Acknowledgments & Citation
 

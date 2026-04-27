@@ -1,6 +1,6 @@
 """Binary Intrinsic Dimension estimator (pure-JAX, functional)."""
 
-from bid.api import estimate_bid
+from bid.api import estimate_bid, estimate_bid_shells
 from bid.distances import check_pm1, pairwise_hamming
 from bid.histogram import (
     Histogram,
@@ -18,9 +18,20 @@ from bid.optimize import (
     minimize_kl,
     step,
 )
+from bid.shells import (
+    ShellData,
+    ShellFitResult,
+    cumulative_volume,
+    fit_conditional,
+    fit_multinomial,
+    nll_conditional,
+    nll_multinomial,
+    shell_counts,
+)
 
 __all__ = [
     "estimate_bid",
+    "estimate_bid_shells",
     "pairwise_hamming",
     "check_pm1",
     "Histogram",
@@ -36,5 +47,13 @@ __all__ = [
     "minimize_kl",
     "initial_guess",
     "finalize",
+    "ShellData",
+    "ShellFitResult",
+    "shell_counts",
+    "cumulative_volume",
+    "nll_multinomial",
+    "nll_conditional",
+    "fit_multinomial",
+    "fit_conditional",
 ]
 __version__ = "0.1.0"
